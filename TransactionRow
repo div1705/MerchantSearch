@@ -1,0 +1,84 @@
+package com.ondot.merchantsearch;
+
+/**
+ * Created by divkhare on 8/9/16.
+ */
+public class TransactionRow {
+    public String TRANSACTION_ID;
+    public String SUBSCRIBER_ID;
+    public String COM_OBJECT_ID;
+    public String PUSH_API_TRANSACTION_NUMBER;
+    public String PULL_API_TRANSACTION_NUMBER;
+    public String IS_LOGIN_ID;
+    public String IS_LOGIN_ACCOUNT_ID;
+    public String SECONDARY_IS_LOGIN_ACCOUNT_ID;
+    public String IS_LOGIN_CARD_ID;
+    public String MATCHKEY_AUTH_FIN_REQ_RES;
+    public String MATCHKEY_AUTH_ADV;
+    public String MATCHKEY_FIN_ADV;
+    public String MATCHKEY_REV;
+    public String TRANSACTION_DATE;
+    public String TRANSACTION_TIME;
+    public String POSTED_DATE;
+    public String POSTED_TIME;
+    public String REVERSAL_DATE;
+    public String REVERSAL_TIME;
+    public String AMOUNT;
+    public String REVERSAL_AMOUNT;
+    public String CURRENCY_CODE;
+    public String DESCRIPTION_HEADER;
+    public String DESCRIPTION;
+    public String CHECK_NUMBER;
+    public String TRANSACTION_STATUS_ID;
+    public String REASON_DENIED_CODE;
+    public String PENDING_DELETE_DATE;
+    public String TRANSACTION_TYPE_ID;
+    public String TRANSACTION_SUB_TYPE_ID;
+    public String MERCHANT_TYPE_ID;
+    public String MERCHANT_ID;
+    public String MERCHANT_NAME;
+    public String MERCHANT_CITY;
+    public String MERCHANT_STATE_ID;
+    public String MERCHANT_POSTAL_CODE;
+    public String MERCHANT_COUNTRY_ID;
+    public String ACQUIRER_COUNTRY_ID;
+    public String KEY_DATA;
+    public String CONTROLS_BITMAP;
+    public String IS_AGENT_RECOMMENDATION;
+    public String IS_AGENT_RECOMMENDATION_REASON;
+    public String TRANSACTION_ALERT_BITMAP;
+    public String NOTIFICATION_STATUS;
+    public String UNREAD_NOTIFICATION;
+    public String TRANSACTION_TAG_BITMAP;
+    public String TRANSACTION_MEMO;
+    public String SUBSCRIBER_COUNTRY_ID;
+    public String SUBSCRIBER_LATITUDE;
+    public String SUBSCRIBER_LONGITUDE;
+    public String SUBSCRIBER_LOCATION_ACCURACY;
+    public String HAS_ATTACHMENT;
+    public String IS_DISPUTED;
+    public String MCC_CODE;
+    public String TERMINAL_ID;
+    public String CREATE_TIME;
+    public String LAST_UPDATE_TIME;
+    public String IS_DELETED;
+    public String DELETE_TIME;
+
+    public String ACCOUNT_NUMBER;
+    public String ACCOUNT_NUMBER_TOKEN;
+    public String CARD_NUMBER;
+    public String TRACE_NUMBER;
+    public String CONTROL_MESSAGE_RECEIVE_TIME;
+    public String RECOMMENDATION_SENT_TIME;
+    public String ALERT_MESSAGE_RECEIVE_TIME;
+    public String SERVER_MESSAGE_RECEIVE_TIME;
+    public String NOTIFICATION_SENT_TIME;
+    public String NOTIFICATION_ACK_ID;
+    public String CARD_NUMBER_MASK;
+
+    public String UPDATED_MERCHANT_NAME;
+    public String SANITIZED_MERCHANT_NAME;
+
+
+
+}
