@@ -1,0 +1,101 @@
+package com.ondot.merchantsearch;
+
+import org.apache.commons.lang3.StringUtils;
+
+/**
+ * Created by divkhare on 8/12/16.
+ */
+public enum StateCodeEnum {
+
+
+    AL ( "1"  ,"AL"),
+    AK ( "2"  ,"AK"),
+    AZ ( "4"  ,"AZ"),
+    AR ( "5"  ,"AR"),
+    CA ( "6"  ,"CA"),
+    CO ( "8"  ,"CO"),
+    CT ( "9"  ,"CT"),
+    DE ( "10" ,"DE"),
+    DC ( "11" ,"DC"),
+    FL ( "12" ,"FL"),
+    GA ( "13" ,"GA"),
+    HI ( "15" ,"HI"),
+    ID ( "16" ,"ID"),
+    IL ( "17" ,"IL"),
+    IN ( "18" ,"IN"),
+    IA ( "19" ,"IA"),
+    KS ( "20" ,"KS"),
+    KY ( "21" ,"KY"),
+    LA ( "22" ,"LA"),
+    ME ( "23" ,"ME"),
+    MD ( "24" ,"MD"),
+    MA ( "25" ,"MA"),
+    MI ( "26" ,"MI"),
+    MN ( "27" ,"MN"),
+    MS ( "28" ,"MS"),
+    MO ( "29" ,"MO"),
+    MT ( "30" ,"MT"),
+    NE ( "31" ,"NE"),
+    NV ( "32" ,"NV"),
+    NH ( "33" ,"NH"),
+    NJ ( "34" ,"NJ"),
+    NM ( "35" ,"NM"),
+    NY ( "36" ,"NY"),
+    NC ( "37" ,"NC"),
+    ND ( "38" ,"ND"),
+    OH ( "39" ,"OH"),
+    OK ( "40" ,"OK"),
+    OR ( "41" ,"OR"),
+    PA ( "42" ,"PA"),
+    RI ( "44" ,"RI"),
+    SC ( "45" ,"SC"),
+    SD ( "46" ,"SD"),
+    TN ( "47" ,"TN"),
+    TX ( "48" ,"TX"),
+    UT ( "49" ,"UT"),
+    VT ( "50" ,"VT"),
+    VA ( "51" ,"VA"),
+    WA ( "53" ,"WA"),
+    WV ( "54" ,"WV"),
+    WI ( "55" ,"WI"),
+    WY ( "56" ,"WY"),
+    GU ( "66" ,"GU"),
+    PR ( "72" ,"PR"),
+    VI ( "78" ,"VI"),
+    AB ( "81" ,"AB"),
+    BC ( "82" ,"BC"),
+    MB ( "83" ,"MB"),
+    NB ( "84" ,"NB"),
+    NL ( "85" ,"NL"),
+    NS ( "86" ,"NS"),
+    NT ( "87" ,"NT"),
+    NU ( "88" ,"NU"),
+    ON ( "89" ,"ON"),
+    PE ( "90" ,"PE"),
+    QC ( "91" ,"QC"),
+    SK ( "92" ,"SK"),
+    YT ( "93" ,"YT"),
+    UNKNOWN ( "99" ,""),
+    ;
+
+
+    private String stateId;
+    private String stateCode;
+
+    StateCodeEnum(String stateId, String stateCode){
+        this.stateCode = stateCode;
+        this.stateId = stateId;
+    }
+
+    public static String getState(String name) {
+        if(StringUtils.isBlank(name)){
+            return "";
+        }
+        for (StateCodeEnum cee : StateCodeEnum.values()) {
+            if (cee.stateId.toLowerCase().compareTo(name.toLowerCase()) == 0) {
+                return cee.stateCode;
+            }
+        }
+        return name;
+    }
+}
