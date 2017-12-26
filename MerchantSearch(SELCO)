@@ -1,0 +1,399 @@
+package com.ondot.merchantsearch;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
+import okhttp3.*;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created by divkhare on 8/10/16.
+ */
+public class MerchantSearchSELCO {
+
+    public static String appKey = "2Ar1SeOytbQM3mNfq2KR";
+    public static String appCode = "ht7foMp238qjBER9i08Fhg";
+    public static String urlFormat = "https://places.api.here.com/places/v1/discover/search?at={0}&q={1}&app_id={2}&app_code={3}";
+    public static String urlFormat1 = "https://geocoder.cit.api.here.com/6.2/geocode.json?searchtext={0}&gen=9&app_id={1}&app_code={2}";
+    // public static String merchantFile = "/Users/divkhare/Desktop/AZFCU_Feb-May_2015.xls";
+    public static ObjectMapper objectMapper;
+    static {
+        objectMapper = new ObjectMapper();
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
+
+
+
+    /* Scanner location = new Scanner(System.in);  // Reading from System.in
+    System.out.println("Enter Loacation of .xls file: ");
+    String merchantFile = location.next();*/
+    private static final String[] INPUT_FILE_HEADER = {"TRANSACTION_ID","SUBSCRIBER_ID","COM_OBJECT_ID","PUSH_API_TRANSACTION_NUMBER","PULL_API_TRANSACTION_NUMBER","IS_LOGIN_ID","IS_LOGIN_ACCOUNT_ID","SECONDARY_IS_LOGIN_ACCOUNT_ID","IS_LOGIN_CARD_ID","MATCHKEY_AUTH_FIN_REQ_RES","MATCHKEY_AUTH_ADV","MATCHKEY_FIN_ADV","MATCHKEY_REV","TRANSACTION_DATE","TRANSACTION_TIME","POSTED_DATE","POSTED_TIME","REVERSAL_DATE","REVERSAL_TIME","AMOUNT","REVERSAL_AMOUNT","CURRENCY_CODE","DESCRIPTION_HEADER","DESCRIPTION","CHECK_NUMBER","TRANSACTION_STATUS_ID","REASON_DENIED_CODE","PENDING_DELETE_DATE","TRANSACTION_TYPE_ID","TRANSACTION_SUB_TYPE_ID","MERCHANT_TYPE_ID","MERCHANT_ID","MERCHANT_NAME","MERCHANT_CITY","MERCHANT_STATE_ID","MERCHANT_POSTAL_CODE","MERCHANT_COUNTRY_ID","ACQUIRER_COUNTRY_ID","KEY_DATA","CONTROLS_BITMAP","IS_AGENT_RECOMMENDATION","IS_AGENT_RECOMMENDATION_REASON","TRANSACTION_ALERT_BITMAP","NOTIFICATION_STATUS","UNREAD_NOTIFICATION","TRANSACTION_TAG_BITMAP","TRANSACTION_MEMO","SUBSCRIBER_COUNTRY_ID","SUBSCRIBER_LATITUDE","SUBSCRIBER_LONGITUDE","SUBSCRIBER_LOCATION_ACCURACY","HAS_ATTACHMENT","IS_DISPUTED","MCC_CODE","TERMINAL_ID","CREATE_TIME","LAST_UPDATE_TIME","IS_DELETED","DELETE_TIME","ACCOUNT_NUMBER","CARD_NUMBER","TRACE_NUMBER","CONTROL_MESSAGE_RECEIVE_TIME","RECOMMENDATION_SENT_TIME","ALERT_MESSAGE_RECEIVE_TIME","SERVER_MESSAGE_RECEIVE_TIME","NOTIFICATION_SENT_TIME","NOTIFICATION_ACK_ID","CARD_NUMBER_MASK"};
+    private static final String[] OUTPUT_FILE_HEADER = {"TRANSACTION_ID","SUBSCRIBER_ID","COM_OBJECT_ID","PUSH_API_TRANSACTION_NUMBER","PULL_API_TRANSACTION_NUMBER","IS_LOGIN_ID","IS_LOGIN_ACCOUNT_ID","SECONDARY_IS_LOGIN_ACCOUNT_ID","IS_LOGIN_CARD_ID","MATCHKEY_AUTH_FIN_REQ_RES","MATCHKEY_AUTH_ADV","MATCHKEY_FIN_ADV","MATCHKEY_REV","TRANSACTION_DATE","TRANSACTION_TIME","POSTED_DATE","POSTED_TIME","REVERSAL_DATE","REVERSAL_TIME","AMOUNT","REVERSAL_AMOUNT","CURRENCY_CODE","DESCRIPTION_HEADER","DESCRIPTION","CHECK_NUMBER","TRANSACTION_STATUS_ID","REASON_DENIED_CODE","PENDING_DELETE_DATE","TRANSACTION_TYPE_ID","TRANSACTION_SUB_TYPE_ID","MERCHANT_TYPE_ID","MERCHANT_ID","MERCHANT_NAME","MERCHANT_CITY","MERCHANT_STATE_ID","MERCHANT_POSTAL_CODE","MERCHANT_COUNTRY_ID","ACQUIRER_COUNTRY_ID","KEY_DATA","CONTROLS_BITMAP","IS_AGENT_RECOMMENDATION","IS_AGENT_RECOMMENDATION_REASON","TRANSACTION_ALERT_BITMAP","NOTIFICATION_STATUS","UNREAD_NOTIFICATION","TRANSACTION_TAG_BITMAP","TRANSACTION_MEMO","SUBSCRIBER_COUNTRY_ID","SUBSCRIBER_LATITUDE","SUBSCRIBER_LONGITUDE","SUBSCRIBER_LOCATION_ACCURACY","HAS_ATTACHMENT","IS_DISPUTED","MCC_CODE","TERMINAL_ID","CREATE_TIME","LAST_UPDATE_TIME","IS_DELETED","DELETE_TIME","ACCOUNT_NUMBER","CARD_NUMBER","TRACE_NUMBER","CONTROL_MESSAGE_RECEIVE_TIME","RECOMMENDATION_SENT_TIME","ALERT_MESSAGE_RECEIVE_TIME","SERVER_MESSAGE_RECEIVE_TIME","NOTIFICATION_SENT_TIME","NOTIFICATION_ACK_ID","CARD_NUMBER_MASK", "UPDATED_MERCHANT_NAME"};
+
+    //Student attributes
+    private static final String MERCHANT_NAME = "title";
+    private static final String SUBSCRIBER_LATITUDE = "latitude";
+    private static final String SUBSCRIBER_LONGITUDE = "longitude";
+
+
+    public static List<TransactionRow> cleanupMerchantData(String inputFileName) {
+        FileReader fileReader = null;
+
+        CSVParser csvFileParser = null;
+
+        //Create the CSVFormat object with the header mapping
+        CSVFormat csvFileFormat = CSVFormat.DEFAULT.withHeader(INPUT_FILE_HEADER).withSkipHeaderRecord(true);
+        List<TransactionRow> transactionRowList = new ArrayList<>();
+
+        try {
+
+            //Create a new list of student to be filled by CSV file data
+
+            //initialize FileReader object
+            fileReader = new FileReader(inputFileName);
+
+            //initialize CSVParser object
+            csvFileParser = new CSVParser(fileReader, csvFileFormat);
+
+            //Get a list of CSV file records
+            List<CSVRecord> csvRecords = csvFileParser.getRecords();
+
+
+            for(CSVRecord record: csvRecords){
+                TransactionRow row = new TransactionRow();
+                row.TRANSACTION_ID = record.get("TRANSACTION_ID");
+                row.SUBSCRIBER_ID = record.get("SUBSCRIBER_ID");
+                row.COM_OBJECT_ID = record.get("COM_OBJECT_ID");
+                row.PUSH_API_TRANSACTION_NUMBER = record.get("PUSH_API_TRANSACTION_NUMBER");
+                row.PULL_API_TRANSACTION_NUMBER = record.get("PULL_API_TRANSACTION_NUMBER");
+                row.IS_LOGIN_ID = record.get("IS_LOGIN_ID");
+                row.IS_LOGIN_ACCOUNT_ID = record.get("IS_LOGIN_ACCOUNT_ID");
+                row.SECONDARY_IS_LOGIN_ACCOUNT_ID = record.get("SECONDARY_IS_LOGIN_ACCOUNT_ID");
+                row.IS_LOGIN_CARD_ID = record.get("IS_LOGIN_CARD_ID");
+                row.MATCHKEY_AUTH_FIN_REQ_RES = record.get("MATCHKEY_AUTH_FIN_REQ_RES");
+                row.MATCHKEY_AUTH_ADV = record.get("MATCHKEY_AUTH_ADV");
+                row.MATCHKEY_FIN_ADV = record.get("MATCHKEY_FIN_ADV");
+                row.MATCHKEY_REV = record.get("MATCHKEY_REV");
+               // row.ACCOUNT_NUMBER_TOKEN = record.get("ACCOUNT_NUMBER_TOKEN");
+                row.TRANSACTION_DATE = record.get("TRANSACTION_DATE");
+                row.TRANSACTION_TIME = record.get("TRANSACTION_TIME");
+                row.POSTED_DATE = record.get("POSTED_DATE");
+                row.POSTED_TIME = record.get("POSTED_TIME");
+                row.REVERSAL_DATE = record.get("REVERSAL_DATE");
+                row.REVERSAL_TIME = record.get("REVERSAL_TIME");
+                row.AMOUNT = record.get("AMOUNT");
+                row.REVERSAL_AMOUNT = record.get("REVERSAL_AMOUNT");
+                row.CURRENCY_CODE = record.get("CURRENCY_CODE");
+                row.DESCRIPTION_HEADER = record.get("DESCRIPTION_HEADER");
+                row.DESCRIPTION = record.get("DESCRIPTION");
+                row.CHECK_NUMBER = record.get("CHECK_NUMBER");
+                row.TRANSACTION_STATUS_ID = record.get("TRANSACTION_STATUS_ID");
+                row.REASON_DENIED_CODE = record.get("REASON_DENIED_CODE");
+                row.PENDING_DELETE_DATE = record.get("PENDING_DELETE_DATE");
+                row.TRANSACTION_TYPE_ID = record.get("TRANSACTION_TYPE_ID");
+                row.TRANSACTION_SUB_TYPE_ID = record.get("TRANSACTION_SUB_TYPE_ID");
+                row.MERCHANT_TYPE_ID = record.get("MERCHANT_TYPE_ID");
+                row.MERCHANT_ID = record.get("MERCHANT_ID");
+                //cleanup merchant name
+
+                row.MERCHANT_NAME = record.get("MERCHANT_NAME");
+                String merchantName = StringUtils.stripAccents(StringUtils.replace(row.MERCHANT_NAME, "'", " "));
+                merchantName = StringUtils.replace(merchantName, "null", "");
+                merchantName = StringUtils.replace(merchantName, "+", " ");
+                merchantName = StringUtils.replace(merchantName, "#", "");
+                merchantName = StringUtils.replace(merchantName, "*", " ");
+                merchantName = URLEncoder.encode(StringUtils.trimToEmpty(merchantName), "UTF-8");
+                row.SANITIZED_MERCHANT_NAME = merchantName;
+
+                row.MERCHANT_CITY = record.get("MERCHANT_CITY");
+                row.MERCHANT_STATE_ID = StateCodeEnum.getState(record.get("MERCHANT_STATE_ID"));
+                row.MERCHANT_POSTAL_CODE = record.get("MERCHANT_POSTAL_CODE");
+                row.MERCHANT_COUNTRY_ID = ISO_3166_CountryCode.getCountryCode(record.get("MERCHANT_COUNTRY_ID"));
+                row.ACQUIRER_COUNTRY_ID = ISO_3166_CountryCode.getCountryCode(record.get("ACQUIRER_COUNTRY_ID"));
+                row.KEY_DATA = record.get("KEY_DATA");
+                row.CONTROLS_BITMAP = record.get("CONTROLS_BITMAP");
+                row.IS_AGENT_RECOMMENDATION = record.get("IS_AGENT_RECOMMENDATION");
+                row.IS_AGENT_RECOMMENDATION_REASON = record.get("IS_AGENT_RECOMMENDATION_REASON");
+                row.TRANSACTION_ALERT_BITMAP = record.get("TRANSACTION_ALERT_BITMAP");
+                row.NOTIFICATION_STATUS = record.get("NOTIFICATION_STATUS");
+                row.UNREAD_NOTIFICATION = record.get("UNREAD_NOTIFICATION");
+                row.TRANSACTION_TAG_BITMAP = record.get("TRANSACTION_TAG_BITMAP");
+                row.TRANSACTION_MEMO = record.get("TRANSACTION_MEMO");
+                row.SUBSCRIBER_COUNTRY_ID = ISO_3166_CountryCode.getCountryCode(record.get("SUBSCRIBER_COUNTRY_ID"));
+
+                //cleanup
+
+                row.SUBSCRIBER_LATITUDE = StringUtils.replace(record.get("SUBSCRIBER_LATITUDE"), "null", "");
+                Double subscriberLattitudeDbl = NumberUtils.toDouble(row.SUBSCRIBER_LATITUDE);
+
+                row.SUBSCRIBER_LONGITUDE = StringUtils.replace(record.get("SUBSCRIBER_LONGITUDE"), "null", "");
+                Double subscriberLongitudeDbl = NumberUtils.toDouble(row.SUBSCRIBER_LONGITUDE);
+
+                if(subscriberLattitudeDbl <=0 || subscriberLongitudeDbl <= 0){
+                    String adddress = StringUtils.join(new String[]{row.MERCHANT_CITY,row.MERCHANT_STATE_ID,row.MERCHANT_POSTAL_CODE, row.MERCHANT_COUNTRY_ID}, ",");
+                    Object[] params = {adddress, appKey, appCode};
+                    String url = MessageFormat.format(urlFormat1, params);
+                    Pair<String, String> navigationPosition = getNavigation(url);
+                    if(navigationPosition != null){
+                        row.SUBSCRIBER_LATITUDE = navigationPosition.getLeft();
+                        row.SUBSCRIBER_LONGITUDE = navigationPosition.getRight();
+                    }
+                }
+
+                row.SUBSCRIBER_LOCATION_ACCURACY = record.get("SUBSCRIBER_LOCATION_ACCURACY");
+                row.HAS_ATTACHMENT = record.get("HAS_ATTACHMENT");
+                row.IS_DISPUTED = record.get("IS_DISPUTED");
+                row.MCC_CODE = record.get("MCC_CODE");
+                row.TERMINAL_ID = record.get("TERMINAL_ID");
+                row.CREATE_TIME = record.get("CREATE_TIME");
+                row.LAST_UPDATE_TIME = record.get("LAST_UPDATE_TIME");
+                row.IS_DELETED = record.get("IS_DELETED");
+//                row.ACCOUNT_NUMBER_TOKEN = record.get("ACCOUNT_NUMBER_TOKEN");
+                row.CARD_NUMBER = record.get("CARD_NUMBER");
+                row.TRACE_NUMBER = record.get("TRACE_NUMBER");
+             row.CONTROL_MESSAGE_RECEIVE_TIME = record.get("CONTROL_MESSAGE_RECEIVE_TIME");
+               row.RECOMMENDATION_SENT_TIME = record.get("RECOMMENDATION_SENT_TIME");
+                row.ALERT_MESSAGE_RECEIVE_TIME = record.get("ALERT_MESSAGE_RECEIVE_TIME");
+                row.NOTIFICATION_SENT_TIME = record.get("NOTIFICATION_SENT_TIME");
+                row.NOTIFICATION_ACK_ID = record.get("NOTIFICATION_ACK_ID");
+                row.CARD_NUMBER_MASK = record.get("CARD_NUMBER_MASK");
+                row.UPDATED_MERCHANT_NAME = getUpdatedMerchantName(row.MERCHANT_NAME, row.SANITIZED_MERCHANT_NAME, row.SUBSCRIBER_LATITUDE, row.SUBSCRIBER_LONGITUDE);
+                transactionRowList.add(row);
+            }
+
+
+            //write transaction row list to CSV file
+
+
+        } catch (Exception e) {
+            System.out.println("Error in CsvFileReader");
+            e.printStackTrace();
+        } finally {
+            try {
+                fileReader.close();
+                csvFileParser.close();
+            } catch (IOException e) {
+                System.out.println("Error while closing fileReader/csvFileParser");
+                e.printStackTrace();
+            }
+        }
+        return transactionRowList;
+    }
+
+
+
+    public static void writeUpdatedTransactionList(String outputFileName, List<TransactionRow> transactionRowList) throws Exception{
+
+        FileWriter fileWriter = null;
+        CSVPrinter csvFilePrinter = null;
+        //Create the CSVFormat object with "\n" as a record delimiter
+        CSVFormat csvFileFormat = CSVFormat.DEFAULT.withRecordSeparator("\n");
+
+        try {
+
+            //initialize FileWriter object
+            fileWriter = new FileWriter(outputFileName);
+
+            //initialize CSVPrinter object
+            csvFilePrinter = new CSVPrinter(fileWriter, csvFileFormat);
+
+            //Create CSV file header
+            csvFilePrinter.printRecord(OUTPUT_FILE_HEADER);
+
+            //Write a new student object list to the CSV file
+            for (TransactionRow transactionRow : transactionRowList) {
+                List<String> transactionRecord = new ArrayList<>();
+
+                transactionRecord.add(transactionRow.TRANSACTION_ID);
+                transactionRecord.add(transactionRow.SUBSCRIBER_ID);
+                transactionRecord.add(transactionRow.COM_OBJECT_ID);
+                transactionRecord.add(transactionRow.PUSH_API_TRANSACTION_NUMBER);
+                transactionRecord.add(transactionRow.PULL_API_TRANSACTION_NUMBER);
+                transactionRecord.add(transactionRow.IS_LOGIN_ID);
+                transactionRecord.add(transactionRow.IS_LOGIN_ACCOUNT_ID);
+                transactionRecord.add(transactionRow.SECONDARY_IS_LOGIN_ACCOUNT_ID);
+                transactionRecord.add(transactionRow.IS_LOGIN_CARD_ID);
+                transactionRecord.add(transactionRow.MATCHKEY_AUTH_FIN_REQ_RES);
+                transactionRecord.add(transactionRow.MATCHKEY_AUTH_ADV);
+                transactionRecord.add(transactionRow.MATCHKEY_FIN_ADV);
+                transactionRecord.add(transactionRow.MATCHKEY_REV);
+                //transactionRecord.add(transactionRow.ACCOUNT_NUMBER_TOKEN);
+                transactionRecord.add(transactionRow.TRANSACTION_DATE);
+                transactionRecord.add(transactionRow.TRANSACTION_TIME);
+                transactionRecord.add(transactionRow.POSTED_DATE);
+                transactionRecord.add(transactionRow.POSTED_TIME);
+                transactionRecord.add(transactionRow.REVERSAL_DATE);
+                transactionRecord.add(transactionRow.REVERSAL_TIME);
+                transactionRecord.add(transactionRow.AMOUNT);
+                transactionRecord.add(transactionRow.REVERSAL_AMOUNT);
+                transactionRecord.add(transactionRow.CURRENCY_CODE);
+                transactionRecord.add(transactionRow.DESCRIPTION_HEADER);
+                transactionRecord.add(transactionRow.DESCRIPTION);
+                transactionRecord.add(transactionRow.CHECK_NUMBER);
+                transactionRecord.add(transactionRow.TRANSACTION_STATUS_ID);
+                transactionRecord.add(transactionRow.REASON_DENIED_CODE);
+                transactionRecord.add(transactionRow.PENDING_DELETE_DATE);
+                transactionRecord.add(transactionRow.TRANSACTION_TYPE_ID);
+                transactionRecord.add(transactionRow.TRANSACTION_SUB_TYPE_ID);
+                transactionRecord.add(transactionRow.MERCHANT_TYPE_ID);
+                transactionRecord.add(transactionRow.MERCHANT_ID);
+                transactionRecord.add(transactionRow.MERCHANT_NAME);
+                transactionRecord.add(transactionRow.MERCHANT_CITY);
+                transactionRecord.add(transactionRow.MERCHANT_STATE_ID);
+                transactionRecord.add(transactionRow.MERCHANT_POSTAL_CODE);
+                transactionRecord.add(transactionRow.MERCHANT_COUNTRY_ID);
+                transactionRecord.add(transactionRow.ACQUIRER_COUNTRY_ID);
+                transactionRecord.add(transactionRow.KEY_DATA);
+                transactionRecord.add(transactionRow.CONTROLS_BITMAP);
+                transactionRecord.add(transactionRow.IS_AGENT_RECOMMENDATION);
+                transactionRecord.add(transactionRow.IS_AGENT_RECOMMENDATION_REASON);
+                transactionRecord.add(transactionRow.TRANSACTION_ALERT_BITMAP);
+                transactionRecord.add(transactionRow.NOTIFICATION_STATUS);
+                transactionRecord.add(transactionRow.UNREAD_NOTIFICATION);
+                transactionRecord.add(transactionRow.TRANSACTION_TAG_BITMAP);
+                transactionRecord.add(transactionRow.TRANSACTION_MEMO);
+                transactionRecord.add(transactionRow.SUBSCRIBER_COUNTRY_ID);
+                transactionRecord.add(transactionRow.SUBSCRIBER_LATITUDE);
+                transactionRecord.add(transactionRow.SUBSCRIBER_LONGITUDE);
+                transactionRecord.add(transactionRow.SUBSCRIBER_LOCATION_ACCURACY);
+                transactionRecord.add(transactionRow.HAS_ATTACHMENT);
+                transactionRecord.add(transactionRow.IS_DISPUTED);
+                transactionRecord.add(transactionRow.MCC_CODE);
+                transactionRecord.add(transactionRow.TERMINAL_ID);
+                transactionRecord.add(transactionRow.CREATE_TIME);
+                transactionRecord.add(transactionRow.LAST_UPDATE_TIME);
+                transactionRecord.add(transactionRow.IS_DELETED);
+                transactionRecord.add(transactionRow.DELETE_TIME);
+                transactionRecord.add(transactionRow.ACCOUNT_NUMBER);
+                transactionRecord.add(transactionRow.CARD_NUMBER);
+                transactionRecord.add(transactionRow.TRACE_NUMBER);
+                transactionRecord.add(transactionRow.CONTROL_MESSAGE_RECEIVE_TIME);
+                transactionRecord.add(transactionRow.RECOMMENDATION_SENT_TIME);
+                transactionRecord.add(transactionRow.ALERT_MESSAGE_RECEIVE_TIME);
+                transactionRecord.add(transactionRow.SERVER_MESSAGE_RECEIVE_TIME);
+                transactionRecord.add(transactionRow.NOTIFICATION_SENT_TIME);
+                transactionRecord.add(transactionRow.NOTIFICATION_ACK_ID);
+                transactionRecord.add(transactionRow.CARD_NUMBER_MASK);
+                transactionRecord.add(transactionRow.UPDATED_MERCHANT_NAME);
+
+                csvFilePrinter.printRecord(transactionRecord);
+            }
+
+            System.out.println("CSV file was created successfully !!!");
+
+        } catch (Exception e) {
+            System.out.println("Error in CsvFileWriter !!!");
+            e.printStackTrace();
+        } finally {
+            try {
+                fileWriter.flush();
+                fileWriter.close();
+                csvFilePrinter.close();
+            } catch (IOException e) {
+                System.out.println("Error while flushing/closing fileWriter/csvPrinter !!!");
+                e.printStackTrace();
+            }
+        }
+
+
+    }
+
+
+    public static String getWebserviceResponse(String title, String latitude, String longitude) throws Exception {
+        //okhttp
+        String latlong = URLEncoder.encode("" + longitude + "," + latitude, "UTF-8");
+        Object[] params = {latlong, title, appKey, appCode};
+        String url = MessageFormat.format(urlFormat, params);
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .authenticator(new Authenticator() {
+                    @Override
+                    public Request authenticate(Route route, Response response) {
+                        System.out.println("Authenticating for response: " + response);
+                        System.out.println("Challenges: " + response.challenges());
+                        String credential = Credentials.basic(appKey, appCode);
+                        return response.request().newBuilder()
+                                .build();
+                    }
+                })
+                .build();
+        Request request = new Request.Builder()
+                .url(url).get()
+                .build();
+
+        Response response = client.newCall(request).execute();
+        if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+
+        return response.body().string();
+    }
+
+    public static Pair<String, String> getNavigation(String url) throws Exception {
+
+        OkHttpClient client = new OkHttpClient.Builder().build();
+        Request request = new Request.Builder()
+                .url(url).get()
+                .build();
+        Response response = client.newCall(request).execute();
+        if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+        String body = response.body().string();
+        Configuration configuration = Configuration.defaultConfiguration();
+        configuration.addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL);
+        String Latitude = JsonPath.using(configuration).parse(body).read("$..NavigationPosition[0].Latitude").toString();
+        Latitude = StringUtils.replace(Latitude, "[", "");
+        Latitude = StringUtils.replace(Latitude, "]", "");
+        String Longitude = JsonPath.using(configuration).parse(body).read("$..NavigationPosition[0].Longitude").toString();
+        Longitude = StringUtils.replace(Longitude, "[", "");
+        Longitude = StringUtils.replace(Longitude, "]", "");
+        return new ImmutablePair<>(Latitude, Longitude);
+
+    }
+
+    public static void main(String args[]) throws Exception {
+        String inputFile = "/Users/divkhare/Desktop/Selco_Feb-May_20161.csv";
+        String outputFile = "/Users/divkhare/Desktop/Selco_Feb-May_2016 - Output.csv";
+        List<TransactionRow> transactionRowList = cleanupMerchantData(inputFile);
+        writeUpdatedTransactionList(outputFile, transactionRowList);
+
+    }
+
+    public static String getUpdatedMerchantName(String title, String sanitizedTitle, String latitude, String longitude) throws Exception{
+        if(StringUtils.isEmpty(latitude) || StringUtils.isEmpty(longitude)){
+            return title;
+        }
+        String response = getWebserviceResponse(sanitizedTitle, longitude, latitude);
+        String updatedName = "";
+        HereResponse hereResponse = objectMapper.readValue(response, HereResponse.class);
+        if (hereResponse != null && hereResponse.results != null && hereResponse.results.items != null && hereResponse.results.items.size() > 0) {
+            List<Item> items = hereResponse.results.items;
+            for (Item item : items) {
+                System.out.println(title + ": " + item.vicinity + " -------> UPDATED NAME: " + item.title);
+                updatedName = item.title;
+                break;
+            }
+        } else {
+            updatedName = title;
+        }
+        return updatedName;
+    }
+
+
+}
