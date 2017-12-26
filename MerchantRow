@@ -1,0 +1,14 @@
+package com.ondot.merchantsearch;
+
+/**
+ * Created by divkhare on 7/27/16.
+ */
+public class MerchantRow {
+
+    public String title;
+    public String lattitude;
+    public String longitude;
+public String zipcode;
+
+
+}
